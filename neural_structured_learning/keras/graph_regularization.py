@@ -116,13 +116,17 @@ class GraphRegularization(tf.keras.Model):
     # Invoke the call() function of the neighbor features layer directly instead
     # of invoking it as a callable to avoid Keras from wrapping placeholder
     # tensors with the tf.identity() op.
-    sample_features, nbr_features, nbr_weights = self.nbr_features_layer.call(
-        inputs)
+    if any(key.startswith(self.graph_reg_config.neighbor_config.prefix) for key in inputs.keys()):
+      sample_features, nbr_features, nbr_weights = self.nbr_features_layer.call(inputs)
+      has_nbr_inputs = nbr_weights is not None and nbr_features
+    else :
+      has_nbr_inputs = False
+      sample_features = inputs
+
     base_output = self.base_model(sample_features, training=training, **kwargs)
 
     # For evaluation and prediction, we use the base model. So, this overridden
     # call function will get invoked only for training.
-    has_nbr_inputs = nbr_weights is not None and nbr_features
     if (has_nbr_inputs and self.graph_reg_config.multiplier > 0):
       # Use logits for regularization.
       sample_logits = base_output
