@@ -99,10 +99,14 @@ class GraphRegularization(tf.keras.Model):
     Returns:
       The output tensors for the wrapped model.
     """
-    sample_features, nbr_features, nbr_weights = self.nbr_features_layer(inputs)
-    base_output = self.base_model(sample_features, training=training, **kwargs)
+    if any(key.startswith(self.graph_reg_config.neighbor_config.prefix) for key in inputs.keys()):
+      sample_features, nbr_features, nbr_weights = self.nbr_features_layer(inputs)
+      has_nbr_inputs = nbr_weights is not None and nbr_features
+    else :
+      has_nbr_inputs = False
+      sample_features = inputs
 
-    has_nbr_inputs = nbr_weights is not None and nbr_features
+    base_output = self.base_model(sample_features, training=training, **kwargs)
 
     # 'training' is a boolean or boolean tensor. So, we have to use the tf.cond
     # op to be able to write conditional code based on its value.
